@@ -342,7 +342,7 @@
       "leaked_fields": [],
       "rows_exposed": 0,
       "evidence_snippet": "pii_in_activities=['nik', 'rekening', 'email', 'hp', 'alamat']",
-      "note": "Honeypot data trap: free-text fields require Palmerah Shield encryption/tokenization"
+      "note": "Honeypot data trap: free-text fields require Triguna Shield encryption/tokenization"
     },
     {
       "id": "PROOF-C",

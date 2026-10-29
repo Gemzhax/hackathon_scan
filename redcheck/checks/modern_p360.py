@@ -626,7 +626,7 @@ def check_B16(client: httpx.Client, sb: Scoreboard) -> Finding:
     vuln = len(pii_found) > 0
     evidence = f"pii_in_activities={list(pii_found.keys())}"
     return _status_check(vuln, id_, cat, sev, ep, evidence,
-                         note="Honeypot data trap: free-text fields require Palmerah Shield encryption/tokenization")
+                         note="Honeypot data trap: free-text fields require Triguna Shield encryption/tokenization")
 
 
 # ---------------------------------------------------------------------------

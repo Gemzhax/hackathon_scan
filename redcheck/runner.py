@@ -61,7 +61,7 @@ def _detect_mode_legacy(client: httpx.Client) -> str:
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Palmerah RedCheck runner")
+    ap = argparse.ArgumentParser(description="Triguna RedCheck runner")
     ap.add_argument("--mode", choices=["vuln", "hardened"], default=None,
                     help="Expected mode (label only; actual mode read from target)")
     ap.add_argument("--base", default=None,

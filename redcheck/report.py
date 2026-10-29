@@ -150,7 +150,7 @@ _HTML_TEMPLATE = """\
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Palmerah RedCheck — Before/After Report</title>
+<title>Triguna RedCheck — Before/After Report</title>
 <style>
 :root{{
   --bg:#0f1117;--card:#1a1d2b;--border:#2a2d40;--text:#e0e0e8;
@@ -180,7 +180,7 @@ code{{background:rgba(128,128,200,.15);padding:.1em .3em;border-radius:3px;font-
 </style>
 </head>
 <body>
-<h1>🛡️ Palmerah RedCheck — Before / After</h1>
+<h1>🛡️ Triguna RedCheck — Before / After</h1>
 <p class="meta">Generated: {generated_at} &nbsp;|&nbsp; vuln mode: <b>{vuln_mode}</b> &nbsp;→&nbsp; hardened mode: <b>{hard_mode}</b></p>
 
 <h2>📊 Summary</h2>
@@ -226,7 +226,7 @@ code{{background:rgba(128,128,200,.15);padding:.1em .3em;border-radius:3px;font-
 </table>
 </div>
 
-<p class="meta" style="margin-top:2rem">Palmerah RedCheck v1.0 · Hackathon DPR RI 2026</p>
+<p class="meta" style="margin-top:2rem">Triguna RedCheck v1.0 · Hackathon DPR RI 2026</p>
 </body>
 </html>
 """

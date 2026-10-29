@@ -1,4 +1,4 @@
-# Palmerah RedCheck
+# Triguna RedCheck
 
 Harness validasi pertahanan untuk Hackathon DPR RI 2026 "Keamanan Data".
 

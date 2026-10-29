@@ -1,4 +1,4 @@
-# Palmerah RedCheck — Makefile
+# Triguna RedCheck — Makefile
 # Windows (PowerShell) primary; bash targets included for WSL/Linux.
 
 .PHONY: all install redcheck-vuln redcheck-hardened compare test record reset help
@@ -8,7 +8,7 @@ PYTEST ?= pytest
 OUT    := out
 
 help:
-	@echo "Palmerah RedCheck — harness validasi pertahanan"
+	@echo "Triguna RedCheck — harness validasi pertahanan"
 	@echo ""
 	@echo "  make install           Install deps (pip install -e .)"
 	@echo "  make redcheck-vuln     Jalankan semua check vs target MODE=vuln"

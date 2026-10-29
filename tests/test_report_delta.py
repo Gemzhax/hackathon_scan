@@ -54,7 +54,7 @@ def test_compare_html_generates():
         html = out.read_text(encoding="utf-8")
 
         # Spot-check required sections
-        assert "Palmerah RedCheck" in html
+        assert "Triguna RedCheck" in html
         assert "PII Leak Scoreboard" in html
         assert "Before / After" in html
         assert "A1" in html
