@@ -1,0 +1,430 @@
+{
+  "target": "combined",
+  "mode": "vuln",
+  "generated_at": "2026-10-29T16:28:18.086462+00:00",
+  "findings": [
+    {
+      "id": "A1",
+      "category": "SQL Injection (UNION/boolean/error)",
+      "severity": "critical",
+      "endpoint": "/direktori.php?q=",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '%' OR ruangan LIKE '%'%' ORDER BY id LIMIT 0, 20' a",
+      "note": ""
+    },
+    {
+      "id": "A2",
+      "category": "SQL Injection numerik + IDOR",
+      "severity": "critical",
+      "endpoint": "/anggota.php?id=",
+      "status": "fail",
+      "leaked_fields": [
+        "no_ktp",
+        "rekening",
+        "handphone",
+        "email"
+      ],
+      "rows_exposed": 0,
+      "evidence_snippet": "id=1 has_data=True, no_reject_alpha=True, bool_diff=False",
+      "note": ""
+    },
+    {
+      "id": "A3",
+      "category": "Auth bypass SQLi (MD5 tanpa salt)",
+      "severity": "critical",
+      "endpoint": "/login.php",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "status=500 url=http://127.0.0.1:8080/login.php sql_error=True dashboard=True",
+      "note": ""
+    },
+    {
+      "id": "A4",
+      "category": "Enumerasi username",
+      "severity": "medium",
+      "endpoint": "/login.php",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "known='<!doctype html>\r\n<html lang=\"id\">\r\n<head>\r\n<meta charset=\"utf-8\">\r\n<meta name=\"v' unknown='<!doctype html>\r\n<html lang=\"id\">\r\n<head>\r\n<meta charset=\"utf-8\">\r\n<meta name=\"v'",
+      "note": ""
+    },
+    {
+      "id": "A5",
+      "category": "Brute force (tanpa batas)",
+      "severity": "high",
+      "endpoint": "/login.php",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "Sent 6 attempts, blocked=False",
+      "note": ""
+    },
+    {
+      "id": "A6",
+      "category": "Data disembunyikan di UI tapi terkirim",
+      "severity": "high",
+      "endpoint": "/anggota.php",
+      "status": "fail",
+      "leaked_fields": [
+        "no_ktp",
+        "rekening",
+        "handphone"
+      ],
+      "rows_exposed": 0,
+      "evidence_snippet": "sembunyi=False debug_comment=False data-record=True",
+      "note": ""
+    },
+    {
+      "id": "A7",
+      "category": "Broken function-level auth (keuangan.php)",
+      "severity": "high",
+      "endpoint": "/keuangan.php",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "anon=True humas=True",
+      "note": ""
+    },
+    {
+      "id": "A8",
+      "category": "Ekspor tanpa autentikasi",
+      "severity": "critical",
+      "endpoint": "/export.php",
+      "status": "fail",
+      "leaked_fields": [
+        "no_ktp",
+        "rekening",
+        "npwp",
+        "handphone",
+        "email"
+      ],
+      "rows_exposed": 734,
+      "evidence_snippet": "status=200 is_csv=True has_pii=True rows≈734",
+      "note": ""
+    },
+    {
+      "id": "A9",
+      "category": "File sensitif di web root",
+      "severity": "critical",
+      "endpoint": "/backup/, /.env, /robots.txt",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "found=['/backup/simad_backup_2026-10-28.sql', '/.env', '/robots.txt[leaks-paths]']",
+      "note": ""
+    },
+    {
+      "id": "A10",
+      "category": "Error verbose (MySQL query exposed)",
+      "severity": "medium",
+      "endpoint": "/direktori.php?q=",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "<div class=\"sql-error\"><b>MySQL Error 1064:</b> You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version f",
+      "note": ""
+    },
+    {
+      "id": "A11",
+      "category": "Hash lemah (MD5 tanpa salt)",
+      "severity": "high",
+      "endpoint": "/backup/simad_backup_2026-10-28.sql, /admin dashboard",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "Found 738 MD5-like hashes, sample=['0192023a7bbd73250516f069df18b500', '441ebb68b40aaaf53d0085e04b32ba40']",
+      "note": ""
+    },
+    {
+      "id": "A12",
+      "category": "Sesi: cookie tanpa HttpOnly/SameSite",
+      "severity": "medium",
+      "endpoint": "/login.php",
+      "status": "pass",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "has_simadsessid=False httponly=False samesite=False",
+      "note": ""
+    },
+    {
+      "id": "A13",
+      "category": "Header keamanan hilang",
+      "severity": "medium",
+      "endpoint": "/ (homepage)",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "missing=['content-security-policy', 'x-frame-options', 'x-content-type-options', 'referrer-policy'] x-powered-by=True",
+      "note": ""
+    },
+    {
+      "id": "A14",
+      "category": "Hak DB berlebih (root)",
+      "severity": "medium",
+      "endpoint": "/.env, /backup/*.sql",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "root_in_env=True root_in_sql=False",
+      "note": ""
+    },
+    {
+      "id": "A15",
+      "category": "Tanpa audit trail",
+      "severity": "low",
+      "endpoint": "/admin/audit_log, /direktori.php",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "audit_log_found=False",
+      "note": ""
+    },
+    {
+      "id": "B1",
+      "category": "SQL Injection (/api/members?q= / ?sort=)",
+      "severity": "critical",
+      "endpoint": "/api/members?q=",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "sql_err=True bool_diff=False",
+      "note": ""
+    },
+    {
+      "id": "B2",
+      "category": "Excessive data exposure (/api/members public)",
+      "severity": "critical",
+      "endpoint": "/api/members",
+      "status": "fail",
+      "leaked_fields": [
+        "nik",
+        "account_no",
+        "address_jakarta",
+        "address_region",
+        "mobile",
+        "email",
+        "npwp",
+        "religion",
+        "allergy_note",
+        "condition_note",
+        "blood_type"
+      ],
+      "rows_exposed": 10,
+      "evidence_snippet": "PII fields in public response: ['nik', 'account_no', 'address_jakarta', 'address_region', 'mobile', 'email', 'npwp', 'religion'] rows≈10",
+      "note": ""
+    },
+    {
+      "id": "B3",
+      "category": "BOLA/IDOR (/api/members/:id tanpa auth)",
+      "severity": "critical",
+      "endpoint": "/api/members/1",
+      "status": "fail",
+      "leaked_fields": [
+        "nik",
+        "account_no",
+        "address_jakarta",
+        "address_region",
+        "mobile",
+        "email",
+        "npwp",
+        "religion",
+        "allergy_note",
+        "condition_note",
+        "blood_type"
+      ],
+      "rows_exposed": 0,
+      "evidence_snippet": "status=200 pii_found=['nik', 'account_no', 'address_jakarta', 'address_region', 'mobile', 'email', 'npwp', 'religion', 'allergy_note', 'condition_note', 'blood_type']",
+      "note": ""
+    },
+    {
+      "id": "B4",
+      "category": "Broken function-level auth (/api/finance, /api/health-records)",
+      "severity": "high",
+      "endpoint": "/api/finance, /api/health-records, /api/admin/*",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "violations=['/api/finance→200', '/api/health-records→200', '/api/admin/users→200', '/api/admin/export→200(anon)']",
+      "note": ""
+    },
+    {
+      "id": "B5",
+      "category": "Ekspor tanpa autentikasi (/api/admin/export)",
+      "severity": "critical",
+      "endpoint": "/api/admin/export",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "status=200 len=632732 is_csv=False rows≈0",
+      "note": ""
+    },
+    {
+      "id": "B6",
+      "category": "Mass assignment (PATCH /api/me {role:admin})",
+      "severity": "critical",
+      "endpoint": "/api/me",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "status=200 role_in_response={'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXJuYW1lIjoiaHVtYXMiLCJyb2xlIjoiYWRtaW4iLCJtZW1iZXJfaWQiOm51bGwsIm5hbWUiOiJTdGFmIEh1bWFzIiwiaWF0IjoxNzkzMjkx",
+      "note": ""
+    },
+    {
+      "id": "B7",
+      "category": "JWT HS256 secret lemah + token di localStorage",
+      "severity": "high",
+      "endpoint": "/api/auth/login",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "JWT sig matches weak secret 'parlemen360' = True TTL=30d",
+      "note": ""
+    },
+    {
+      "id": "B8",
+      "category": "Stored XSS (/api/members/:id/activities notes)",
+      "severity": "high",
+      "endpoint": "/api/members/1/activities",
+      "status": "skip",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "",
+      "note": "POST failed 500"
+    },
+    {
+      "id": "B9",
+      "category": "Rahasia terekspos (/.env, /api/debug)",
+      "severity": "critical",
+      "endpoint": "/.env, /api/debug",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "exposed_paths=['/.env', '/api/debug']",
+      "note": ""
+    },
+    {
+      "id": "B10",
+      "category": "PII di log (web-modern/logs/app.log)",
+      "severity": "high",
+      "endpoint": "web-modern/logs/app.log (host mount)",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "pii_classes_found=['rekening', 'hp', 'alamat', 'agama'] has_body=True has_password=True",
+      "note": ""
+    },
+    {
+      "id": "B11",
+      "category": "Error verbose (stack/position/code)",
+      "severity": "medium",
+      "endpoint": "/api/members?q=",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "{\"error\":\"operator does not exist: boolean % unknown\",\"code\":\"42883\",\"position\":\"1136\",\"hint\":\"No operator matches the given name and argument types. You might need to add explicit",
+      "note": ""
+    },
+    {
+      "id": "B12",
+      "category": "Enumerasi + brute force (/api/auth/login)",
+      "severity": "medium",
+      "endpoint": "/api/auth/login",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "diff_msg=True blocked_at_6=False timing_diff_ms=46",
+      "note": ""
+    },
+    {
+      "id": "B13",
+      "category": "Header keamanan / cache / CORS",
+      "severity": "medium",
+      "endpoint": "/api/members (headers)",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "cors=* True powered_by=True no_csp=True cache_no_store=False",
+      "note": ""
+    },
+    {
+      "id": "B14",
+      "category": "Agregat data sensitif (/api/stats)",
+      "severity": "medium",
+      "endpoint": "/api/stats",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "status=200 has_religion_aggregate=True",
+      "note": ""
+    },
+    {
+      "id": "B15",
+      "category": "Hak DB berlebih (postgres superuser)",
+      "severity": "medium",
+      "endpoint": "/.env, /api/debug",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "superuser_credentials_found=True",
+      "note": ""
+    },
+    {
+      "id": "B16",
+      "category": "PII di field teks bebas (member_activities.ref_code / notes)",
+      "severity": "high",
+      "endpoint": "/api/activities (sample)",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "pii_in_activities=['nik', 'rekening', 'email', 'hp', 'alamat']",
+      "note": ""
+    },
+    {
+      "id": "PROOF-C",
+      "category": "Proof (c): RBAC sah via HTTP",
+      "severity": "info",
+      "endpoint": "/api/members/:id (multi-role)",
+      "status": "fail",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "keuangan→account_no:VISIBLE✅ | keuangan→religion:LEAKED❌('Buddha') | humas→/api/finance:200❌ | anggota→members/2 leaks ['nik', 'account_no', 'npwp']❌",
+      "note": "results=1 failures=3"
+    },
+    {
+      "id": "PROOF-A",
+      "category": "(error)",
+      "severity": "info",
+      "endpoint": "?",
+      "status": "skip",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "",
+      "note": "'charmap' codec can't encode character '\\u2192' in position 45: character maps to <undefined>"
+    },
+    {
+      "id": "PROOF-B",
+      "category": "(error)",
+      "severity": "info",
+      "endpoint": "?",
+      "status": "skip",
+      "leaked_fields": [],
+      "rows_exposed": 0,
+      "evidence_snippet": "",
+      "note": "'charmap' codec can't encode character '\\u2192' in position 47: character maps to <undefined>"
+    }
+  ],
+  "scoreboard": {
+    "nik": 744,
+    "rekening": 5139,
+    "alamat": 500,
+    "email": 744,
+    "hp": 2935,
+    "agama": 7,
+    "kesehatan": 25,
+    "npwp": 10
+  }
+}

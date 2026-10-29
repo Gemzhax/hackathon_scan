@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Palmerah RedCheck — Before/After Report</title>
+<style>
+:root{
+  --bg:#0f1117;--card:#1a1d2b;--border:#2a2d40;--text:#e0e0e8;
+  --green:#27ae60;--red:#c0392b;--yellow:#f1c40f;--blue:#2980b9;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+@media(prefers-color-scheme:light){
+  :root{--bg:#f5f6fa;--card:#fff;--border:#dde;--text:#1a1a2e;}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:2rem;}
+h1{font-size:1.6rem;margin-bottom:.25rem;}
+h2{font-size:1.1rem;margin:1.5rem 0 .5rem;border-bottom:1px solid var(--border);padding-bottom:.3rem;}
+.meta{font-size:.8rem;opacity:.6;margin-bottom:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.5rem;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.85rem;}
+th,td{padding:.45rem .6rem;border-bottom:1px solid var(--border);text-align:left;}
+th{opacity:.75;font-weight:600;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;}
+td.center{text-align:center;}
+td.snip{font-size:.75rem;max-width:220px;word-break:break-all;opacity:.8;}
+.summary-grid{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:.5rem .85rem;font-size:.82rem;}
+.chip b{display:block;font-size:1.3rem;}
+.pass{color:var(--green);}.fail{color:var(--red);}.skip{color:var(--yellow);}
+code{background:rgba(128,128,200,.15);padding:.1em .3em;border-radius:3px;font-size:.85em;}
+</style>
+</head>
+<body>
+<h1>🛡️ Palmerah RedCheck — Before / After</h1>
+<p class="meta">Generated: 2026-10-28T10:00:00+00:00 &nbsp;|&nbsp; vuln mode: <b>vuln</b> &nbsp;→&nbsp; hardened mode: <b>hardened</b></p>
+
+<h2>📊 Summary</h2>
+<div class="summary-grid">
+  <div class="chip"><b class="fail">31</b>Fail (vuln)</div>
+  <div class="chip"><b class="pass">0</b>Pass (vuln)</div>
+  <div class="chip"><b class="fail">0</b>Fail (hardened)</div>
+  <div class="chip"><b class="pass">31</b>Pass (hardened)</div>
+  <div class="chip"><b class="skip">3</b>Skip (vuln)</div>
+</div>
+
+<h2>🔴 PII Leak Scoreboard</h2>
+<div class="card">
+<table>
+<thead><tr><th>PII Class</th><th>Vuln (unique values)</th><th>Hardened</th><th>Δ</th></tr></thead>
+<tbody>
+<tr><td>nik</td><td class='num'>734</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-734</td></tr>
+<tr><td>rekening</td><td class='num'>734</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-734</td></tr>
+<tr><td>alamat</td><td class='num'>180</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-180</td></tr>
+<tr><td>email</td><td class='num'>200</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-200</td></tr>
+<tr><td>hp</td><td class='num'>150</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-150</td></tr>
+<tr><td>agama</td><td class='num'>50</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-50</td></tr>
+<tr><td>kesehatan</td><td class='num'>0</td><td class='num'>0</td><td class='num' style='color:#888'>—</td></tr>
+<tr><td>npwp</td><td class='num'>734</td><td class='num'>0</td><td class='num' style='color:#27ae60'>-734</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>⚠️ Severity Distribution</h2>
+<div class="card">
+<table>
+<thead><tr><th>Severity</th><th>Vuln count</th><th>Hardened count</th></tr></thead>
+<tbody>
+<tr><td style='color:#c0392b'><b>critical</b></td><td class='num'>11</td><td class='num'>11</td></tr>
+<tr><td style='color:#e67e22'><b>high</b></td><td class='num'>9</td><td class='num'>9</td></tr>
+<tr><td style='color:#f1c40f'><b>medium</b></td><td class='num'>10</td><td class='num'>10</td></tr>
+<tr><td style='color:#27ae60'><b>low</b></td><td class='num'>1</td><td class='num'>1</td></tr>
+<tr><td style='color:#2980b9'><b>info</b></td><td class='num'>3</td><td class='num'>3</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>🔍 Finding Detail</h2>
+<div class="card">
+<table>
+<thead><tr>
+  <th>ID</th><th>Category</th><th>Sev</th><th>Endpoint</th>
+  <th>Vuln</th><th>Hard</th>
+  <th>Evidence (vuln)</th><th>Evidence (hard)</th>
+</tr></thead>
+<tbody>
+<tr><td><code>A1</code></td><td>SQL Injection (UNION/boolean/error)</td><td style='color:#c0392b'>critical</td><td>/direktori.php?q=</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>SQL syntax error near '1'</td><td class='snip'>No SQL error, no boolean diff</td></tr>
+<tr><td><code>A10</code></td><td>Error verbose (MySQL query exposed)</td><td style='color:#f1c40f'>medium</td><td>/direktori.php?q=</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>SELECT * FROM anggota WHERE nama LIKE '%'%'</td><td class='snip'>Generic error: 'Permintaan tidak valid (ref: a3f2)'</td></tr>
+<tr><td><code>A11</code></td><td>Hash lemah (MD5 tanpa salt)</td><td style='color:#e67e22'>high</td><td>/backup/simad_backup_2026-10-28.sql, /admin dashboard</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>Found 734 MD5-like hashes, sample=['0192023a7bbd73250516f069df18b500']</td><td class='snip'>Found 0 MD5-like hashes (backup not accessible)</td></tr>
+<tr><td><code>A12</code></td><td>Sesi: cookie tanpa HttpOnly/SameSite</td><td style='color:#f1c40f'>medium</td><td>/login.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>has_simadsessid=True httponly=False samesite=False</td><td class='snip'>has_simadsessid=True httponly=True samesite=True</td></tr>
+<tr><td><code>A13</code></td><td>Header keamanan hilang</td><td style='color:#f1c40f'>medium</td><td>/ (homepage)</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>missing=['content-security-policy', 'x-frame-options', 'x-content-type-options', 'referrer-policy'] x-powered-by=True</td><td class='snip'>missing=[] x-powered-by=False</td></tr>
+<tr><td><code>A14</code></td><td>Hak DB berlebih (root)</td><td style='color:#f1c40f'>medium</td><td>/.env, /backup/*.sql</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>root_in_env=True root_in_sql=True</td><td class='snip'>root_in_env=False root_in_sql=False</td></tr>
+<tr><td><code>A15</code></td><td>Tanpa audit trail</td><td style='color:#27ae60'>low</td><td>/admin/audit_log, /direktori.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>audit_log_found=False</td><td class='snip'>audit_log_found=True</td></tr>
+<tr><td><code>A2</code></td><td>SQL Injection numerik + IDOR</td><td style='color:#c0392b'>critical</td><td>/anggota.php?id=</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>id=1 has_data=True, no_reject_alpha=True</td><td class='snip'>id=1 has_data=False, no_reject_alpha=False (400)</td></tr>
+<tr><td><code>A3</code></td><td>Auth bypass SQLi (MD5 tanpa salt)</td><td style='color:#c0392b'>critical</td><td>/login.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>status=200 dashboard=True</td><td class='snip'>status=401 dashboard=False</td></tr>
+<tr><td><code>A4</code></td><td>Enumerasi username</td><td style='color:#f1c40f'>medium</td><td>/login.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>known='kata sandi salah' unknown='tidak terdaftar'</td><td class='snip'>Messages identical: 'Kredensial tidak valid'</td></tr>
+<tr><td><code>A5</code></td><td>Brute force (tanpa batas)</td><td style='color:#e67e22'>high</td><td>/login.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>Sent 6 attempts, blocked=False</td><td class='snip'>Sent 6 attempts, blocked=True (429 at attempt 5)</td></tr>
+<tr><td><code>A6</code></td><td>Data disembunyikan di UI tapi terkirim</td><td style='color:#e67e22'>high</td><td>/anggota.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>sembunyi=True debug_comment=True data-record=True</td><td class='snip'>sembunyi=False debug_comment=False data-record=False</td></tr>
+<tr><td><code>A7</code></td><td>Broken function-level auth (keuangan.php)</td><td style='color:#e67e22'>high</td><td>/keuangan.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>anon=True humas=True</td><td class='snip'>anon=False humas=False</td></tr>
+<tr><td><code>A8</code></td><td>Ekspor tanpa autentikasi</td><td style='color:#c0392b'>critical</td><td>/export.php</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>status=200 is_csv=True has_pii=True rows≈734</td><td class='snip'>status=302 (redirect to login)</td></tr>
+<tr><td><code>A9</code></td><td>File sensitif di web root</td><td style='color:#c0392b'>critical</td><td>/backup/, /.env, /robots.txt</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>found=['/backup/', '/backup/simad_backup_2026-10-28.sql', '/.env']</td><td class='snip'>found=[]</td></tr>
+<tr><td><code>B1</code></td><td>SQL Injection (/api/members?q= / ?sort=)</td><td style='color:#c0392b'>critical</td><td>/api/members?q=</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>syntax error at or near ''1'='1'</td><td class='snip'>No SQL error, no bool diff</td></tr>
+<tr><td><code>B10</code></td><td>PII di log (web-modern/logs/app.log)</td><td style='color:#e67e22'>high</td><td>web-modern/logs/app.log (host mount)</td><td class='center'>⚠️</td><td class='center'>⚠️</td><td class='snip'></td><td class='snip'></td></tr>
+<tr><td><code>B11</code></td><td>Error verbose (stack/position/code)</td><td style='color:#f1c40f'>medium</td><td>/api/members?q=</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>{&quot;error&quot;:&quot;syntax error&quot;,&quot;position&quot;:&quot;42&quot;,&quot;stack&quot;:&quot;Error: ...&quot;}</td><td class='snip'>Generic error: {&quot;error&quot;:&quot;Permintaan tidak valid&quot;,&quot;request_id&quot;:&quot;b2f4&quot;}</td></tr>
+<tr><td><code>B12</code></td><td>Enumerasi + brute force (/api/auth/login)</td><td style='color:#f1c40f'>medium</td><td>/api/auth/login</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>diff_msg=True blocked_at_6=False timing_diff_ms=450</td><td class='snip'>diff_msg=False blocked_at_6=True timing_diff_ms=12</td></tr>
+<tr><td><code>B13</code></td><td>Header keamanan / cache / CORS</td><td style='color:#f1c40f'>medium</td><td>/api/members (headers)</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>cors=* True powered_by=True no_csp=True</td><td class='snip'>cors=* False powered_by=False no_csp=False cache_no_store=True</td></tr>
+<tr><td><code>B14</code></td><td>Agregat data sensitif (/api/stats)</td><td style='color:#f1c40f'>medium</td><td>/api/stats</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>status=200 has_religion_aggregate=True</td><td class='snip'>status=200 has_religion_aggregate=False</td></tr>
+<tr><td><code>B15</code></td><td>Hak DB berlebih (postgres superuser)</td><td style='color:#f1c40f'>medium</td><td>/.env, /api/debug</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>superuser_credentials_found=True</td><td class='snip'>superuser_credentials_found=False</td></tr>
+<tr><td><code>B16</code></td><td>PII di field teks bebas (member_activities.ref_code / notes)</td><td style='color:#e67e22'>high</td><td>/api/activities (sample)</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>pii_in_activities=['nik', 'email', 'hp']</td><td class='snip'>pii_in_activities=[]</td></tr>
+<tr><td><code>B2</code></td><td>Excessive data exposure (/api/members public)</td><td style='color:#c0392b'>critical</td><td>/api/members</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>PII fields in public response: ['nik', 'account_no', 'address_jakarta', 'mobile'] rows≈734</td><td class='snip'>PII fields in public response: [] — projection applied</td></tr>
+<tr><td><code>B3</code></td><td>BOLA/IDOR (/api/members/:id tanpa auth)</td><td style='color:#c0392b'>critical</td><td>/api/members/1</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>status=200 pii_found=['nik', 'account_no']</td><td class='snip'>status=200 pii_found=[]</td></tr>
+<tr><td><code>B4</code></td><td>Broken function-level auth (/api/finance, /api/health-records)</td><td style='color:#e67e22'>high</td><td>/api/finance, /api/health-records, /api/admin/*</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>violations=['/api/finance→200', '/api/health-records→200']</td><td class='snip'>violations=[]</td></tr>
+<tr><td><code>B5</code></td><td>Ekspor tanpa autentikasi (/api/admin/export)</td><td style='color:#c0392b'>critical</td><td>/api/admin/export</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>status=200 len=58230 is_csv=True rows≈734</td><td class='snip'>status=401</td></tr>
+<tr><td><code>B6</code></td><td>Mass assignment (PATCH /api/me {role:admin})</td><td style='color:#c0392b'>critical</td><td>/api/me</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>status=200 role_in_response={'role': 'admin'}</td><td class='snip'>status=200 role_in_response={'display_name': 'updated'}</td></tr>
+<tr><td><code>B7</code></td><td>JWT HS256 secret lemah + token di localStorage</td><td style='color:#e67e22'>high</td><td>/api/auth/login</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>JWT sig matches weak secret 'parlemen360' = True TTL=30d</td><td class='snip'>JWT sig matches weak secret 'parlemen360' = False TTL=0d (30min)</td></tr>
+<tr><td><code>B8</code></td><td>Stored XSS (/api/members/:id/activities notes)</td><td style='color:#e67e22'>high</td><td>/api/members/1/activities</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>marker rendered_raw=True</td><td class='snip'>marker rendered_raw=False (sanitized)</td></tr>
+<tr><td><code>B9</code></td><td>Rahasia terekspos (/.env, /api/debug)</td><td style='color:#c0392b'>critical</td><td>/.env, /api/debug</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>exposed_paths=['/.env', '/api/debug']</td><td class='snip'>exposed_paths=[]</td></tr>
+<tr><td><code>PROOF-A</code></td><td>Proof (a): dump tanpa kunci → plaintext=0</td><td style='color:#2980b9'>info</td><td>MySQL simad + PG parlemen360 (host direct)</td><td class='center'>❌</td><td class='center'>✅</td><td class='snip'>Fallback from leak_run.json: T3 exposed=100% (expected 0 in hardened)</td><td class='snip'>Fallback from leak_run.json: T3 exposed=0%</td></tr>
+<tr><td><code>PROOF-B</code></td><td>Proof (b): dump + kunci bocor → finance subset terbuka</td><td style='color:#2980b9'>info</td><td>KMS (not set)/v1/unwrap</td><td class='center'>⚠️</td><td class='center'>⚠️</td><td class='snip'></td><td class='snip'></td></tr>
+<tr><td><code>PROOF-C</code></td><td>Proof (c): RBAC sah via HTTP</td><td style='color:#2980b9'>info</td><td>/api/members/:id (multi-role)</td><td class='center'>⚠️</td><td class='center'>⚠️</td><td class='snip'></td><td class='snip'></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="meta" style="margin-top:2rem">Palmerah RedCheck v1.0 · Hackathon DPR RI 2026</p>
+</body>
+</html>
