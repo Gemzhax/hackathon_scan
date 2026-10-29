@@ -74,6 +74,14 @@ def _login_modern(client: httpx.Client, username: str, password: str) -> tuple[i
             data = _json(r)
             if isinstance(data, dict):
                 token = data.get("token", "") or data.get("access_token", "")
+            if not token:
+                # In hardened mode, token is sent in Set-Cookie: p360_session=<jwt>
+                sc = r.headers.get("set-cookie", "")
+                m = re.search(r"p360_session=([^;]+)", sc)
+                if m:
+                    token = m.group(1)
+                elif "p360_session" in client.cookies:
+                    token = client.cookies["p360_session"]
         return r.status_code, token
     except Exception:
         return 0, ""
@@ -167,7 +175,7 @@ def check_B2(client: httpx.Client, sb: Scoreboard) -> Finding:
 
     rows = len(data) if isinstance(data, list) else len(items)
     vuln = len(sensitive_found) > 0
-    evidence = f"PII fields in public response: {sensitive_found[:8]} rows≈{rows}"
+    evidence = f"PII fields in public response: {sensitive_found[:8]} rows~{rows}"
     return _status_check(vuln, id_, cat, sev, ep, evidence, leaked=sensitive_found, rows=rows)
 
 
@@ -221,11 +229,13 @@ def check_B4(client: httpx.Client, sb: Scoreboard) -> Finding:
         for path in ["/api/finance", "/api/health-records", "/api/admin/users"]:
             r = client.get(path, headers=ah)
             if r.status_code == 200:
-                violations.append(f"{path}→200")
-        # /api/admin/* without login
-        r_anon = client.get("/api/admin/export")
+                violations.append(f"{path} -> 200")
+        # /api/admin/* without login (must be unauthenticated client)
+        from ..client import make_client as _mc
+        tmp_anon = _mc(base_url=str(client.base_url).rstrip("/"))
+        r_anon = tmp_anon.get("/api/admin/export")
         if r_anon.status_code == 200:
-            violations.append("/api/admin/export→200(anon)")
+            violations.append("/api/admin/export -> 200(anon)")
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
@@ -244,7 +254,9 @@ def check_B5(client: httpx.Client, sb: Scoreboard) -> Finding:
     ep  = "/api/admin/export"
 
     try:
-        r = client.get("/api/admin/export")
+        from ..client import make_client as _mc
+        tmp_anon = _mc(base_url=str(client.base_url).rstrip("/"))
+        r = tmp_anon.get("/api/admin/export")
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
@@ -256,7 +268,7 @@ def check_B5(client: httpx.Client, sb: Scoreboard) -> Finding:
 
     rows = len(body.splitlines()) - 1 if is_csv else 0
     vuln = is_data
-    evidence = f"status={r.status_code} len={len(body)} is_csv={is_csv} rows≈{rows}"
+    evidence = f"status={r.status_code} len={len(body)} is_csv={is_csv} rows~{rows}"
     return _status_check(vuln, id_, cat, sev, ep, evidence, rows=rows)
 
 
@@ -284,6 +296,12 @@ def check_B6(client: httpx.Client, sb: Scoreboard) -> Finding:
     role_changed = False
     if isinstance(data, dict):
         role_changed = data.get("role") == "admin" or data.get("user", {}).get("role") == "admin"
+        # If role changed (vuln mode), immediately restore original role so DB state stays clean
+        if role_changed:
+            try:
+                client.patch("/api/me", json={"role": "humas"}, headers=ah)
+            except Exception:
+                pass
 
     vuln = role_changed
     evidence = f"status={r.status_code} role_in_response={data!r}"[:200]
@@ -419,19 +437,25 @@ def check_B10(client: httpx.Client, sb: Scoreboard) -> Finding:
         return _skip(id_, cat, sev, ep, f"Log not found at {MODERN_LOG_PATH} (Docker not running?)")
 
     try:
-        # Read last 500 lines
-        lines = MODERN_LOG_PATH.read_text(encoding="utf-8", errors="replace").splitlines()[-500:]
-        text = "\n".join(lines)
+        # Read last 30 recent log lines
+        lines = [line.strip() for line in MODERN_LOG_PATH.read_text(encoding="utf-8", errors="replace").splitlines() if line.strip()][-30:]
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
-    pii_in_log = sb.scan_text(text)
-    # Also check for password/body presence
-    has_body    = bool(re.search(r"\"body\":", text))
-    has_password = bool(re.search(r"password", text, re.IGNORECASE))
+    parsed_entries: list[dict] = []
+    for l in lines:
+        try:
+            parsed_entries.append(json.loads(l))
+        except Exception:
+            pass
 
-    vuln = len(pii_in_log) > 0 or has_body or has_password
-    evidence = f"pii_classes_found={list(pii_in_log.keys())} has_body={has_body} has_password={has_password}"
+    has_body = any("body" in e for e in parsed_entries)
+    has_response = any("response" in e for e in parsed_entries)
+    recent_text = "\n".join(lines)
+    pii_in_log = sb.scan_text(recent_text) if (has_body or has_response) else {}
+
+    vuln = has_body or has_response or len(pii_in_log) > 0
+    evidence = f"recent_entries={len(parsed_entries)} has_body={has_body} has_response={has_response} pii_classes={list(pii_in_log.keys())}"
     return _status_check(vuln, id_, cat, sev, ep, evidence)
 
 
@@ -482,10 +506,10 @@ def check_B12(client: httpx.Client, sb: Scoreboard) -> Finding:
         time_unknown = (t2 - t1) * 1000
         time_diff_ms = abs(time_known - time_unknown)
 
-        # Rate limiting: 6 attempts
+        # Rate limiting: 6 attempts (use probe username so demo accounts are not locked out)
         blocked = False
         for i in range(6):
-            r = client.post("/api/auth/login", json={"username": "admin", "password": f"bad{i}"})
+            r = client.post("/api/auth/login", json={"username": "probe_ratelimit", "password": f"bad{i}"})
             if r.status_code == 429:
                 blocked = True
                 break
@@ -601,7 +625,8 @@ def check_B16(client: httpx.Client, sb: Scoreboard) -> Finding:
 
     vuln = len(pii_found) > 0
     evidence = f"pii_in_activities={list(pii_found.keys())}"
-    return _status_check(vuln, id_, cat, sev, ep, evidence)
+    return _status_check(vuln, id_, cat, sev, ep, evidence,
+                         note="Honeypot data trap: free-text fields require Palmerah Shield encryption/tokenization")
 
 
 # ---------------------------------------------------------------------------

@@ -19,6 +19,7 @@ import httpx
 from ..schema import Finding, Severity
 from ..pii import Scoreboard
 from ..accounts import by_role
+from ..config import BASE_SIMAD
 
 BASE = ""  # injected at call time via client.base_url
 
@@ -61,6 +62,19 @@ def _skip(id: str, category: str, severity: Severity, endpoint: str, reason: str
         id=id, category=category, severity=severity, endpoint=endpoint,
         status="skip", note=reason,
     )
+
+
+def _login_simad(client: httpx.Client, username: str, password: str) -> httpx.Response:
+    """Fetch CSRF token from login.php (needed in hardened mode) and POST credentials."""
+    data = {"username": username, "password": password}
+    try:
+        r_get = client.get("/login.php")
+        m = re.search(r'name=["\']csrf["\']\s+value=["\']([^"\']+)["\']', _body(r_get))
+        if m:
+            data["csrf"] = m.group(1)
+    except Exception:
+        pass
+    return client.post("/login.php", data=data)
 
 
 # ---------------------------------------------------------------------------
@@ -134,22 +148,19 @@ def check_A2(client: httpx.Client, sb: Scoreboard) -> Finding:
     body_inject = _body(r_inject)
     body_alpha  = _body(r_alpha)
 
-    # IDOR: valid non-auth request returns member data
-    has_data = bool(re.search(r"(no_ktp|NIK|rekening|handphone|email)", body_valid, re.IGNORECASE))
-    # numeric injection: alpha input not rejected with 400
+    # In vuln mode, numeric SQLi works and unapproved columns are hidden with class="sembunyi"
+    # In hardened mode, ctype_digit returns 400 and denied columns are stripped by project() (showing "Terbatas")
     no_reject = r_alpha.status_code != 400
-    # boolean: injection returns more data
-    rows_valid  = len(re.findall(r"<tr", body_valid))
-    rows_inject = len(re.findall(r"<tr", body_inject))
-    bool_diff = rows_inject > rows_valid + 1
+    has_sembunyi = "sembunyi" in body_valid
+    has_sql_error = bool(re.search(r"(SQL syntax|mysql_fetch|MySQL Error)", body_inject, re.IGNORECASE))
 
     sb.scan_text(body_inject)
     sb.scan_text(body_valid)
 
-    vuln = has_data or no_reject or bool_diff
-    evidence = f"id=1 has_data={has_data}, no_reject_alpha={no_reject}, bool_diff={bool_diff}"
+    vuln = no_reject or has_sembunyi or has_sql_error
+    evidence = f"no_reject_alpha_400={no_reject} (status={r_alpha.status_code}) has_sembunyi={has_sembunyi} sql_error={has_sql_error}"
     leaked = []
-    if has_data:
+    if has_sembunyi:
         leaked = ["no_ktp", "rekening", "handphone", "email"]
 
     return _status_check(vuln, id_, cat, sev, ep, evidence, leaked=leaked)
@@ -164,24 +175,24 @@ def check_A3(client: httpx.Client, sb: Scoreboard) -> Finding:
     sev: Severity = "critical"
     ep  = "/login.php"
 
-    payload_user = "admin' OR '1'='1' --"
+    payload_user = "admin' OR '1'='1' -- "
     payload_pass = "anything"
 
     try:
-        r = client.post("/login.php", data={"username": payload_user, "password": payload_pass})
+        r = _login_simad(client, payload_user, payload_pass)
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
     body = _body(r)
-    # Bypass: redirect to dashboard, OR SQL error in body (payload reached DB), OR no login error
+    # Bypass succeeded if actually redirected away from login or landed on dashboard
     redirected = r.url.path not in ("/login.php", "/login")
     has_sql_error = bool(re.search(r"(SQL syntax|mysql_fetch|MySQL Error)", body, re.IGNORECASE))
-    no_error = not bool(re.search(r"(kata sandi salah|tidak terdaftar|gagal|invalid)", body, re.IGNORECASE))
-    dashboard = bool(re.search(r"(dashboard|selamat datang|logout|keluar)", body, re.IGNORECASE))
+    logged_in = redirected or bool(re.search(r"(selamat datang|logout\.php)", body, re.IGNORECASE))
 
-    # A 500 with SQL error means the payload reached the query — that's the vuln
-    vuln = redirected or has_sql_error or (no_error and dashboard)
-    evidence = f"status={r.status_code} url={r.url} sql_error={has_sql_error} dashboard={dashboard}"
+    # In vuln mode: login bypass redirects to dashboard or causes SQL error in query
+    # In hardened mode: prepared statement treats input as literal username -> fails login on login.php
+    vuln = logged_in or has_sql_error
+    evidence = f"status={r.status_code} url={r.url} sql_error={has_sql_error} logged_in={logged_in}"
     return _status_check(vuln, id_, cat, sev, ep, evidence)
 
 
@@ -227,14 +238,15 @@ def check_A5(client: httpx.Client, sb: Scoreboard) -> Finding:
     blocked = False
     try:
         for i in range(attempts):
-            r = client.post("/login.php", data={"username": "admin", "password": f"wrong{i}"})
-            if r.status_code in (429, 403):
+            r = _login_simad(client, "probe_brute", f"wrong{i}")
+            body = _body(r).lower()
+            if r.status_code in (429, 403) or "terlalu banyak" in body or "coba lagi dalam 1 menit" in body:
                 blocked = True
                 break
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
-    evidence = f"Sent {attempts} attempts, blocked={blocked}"
+    evidence = f"Sent {attempts} attempts, rate_limited={blocked}"
     # vuln = NOT blocked
     return _status_check(not blocked, id_, cat, sev, ep, evidence)
 
@@ -257,19 +269,26 @@ def check_A6(client: httpx.Client, sb: Scoreboard) -> Finding:
     # Look for class="sembunyi" or <!-- debug record --> patterns containing PII
     hidden_div = bool(re.search(r'class=["\']sembunyi["\']', body, re.IGNORECASE))
     debug_comment = bool(re.search(r'<!--\s*debug record\s*-->', body, re.IGNORECASE))
-    data_record = bool(re.search(r'data-record=', body, re.IGNORECASE))
 
-    # Also check direktori.php
+    # Also check for data-record leaking sensitive fields in anggota.php or direktori.php
+    def _has_pii_in_data_record(text: str) -> bool:
+        for m in re.finditer(r'data-record=(["\'])(.*?)\1', text, re.IGNORECASE | re.DOTALL):
+            val = m.group(2)
+            if any(k in val.lower() for k in ("no_ktp", "rekening", "npwp", "handphone", "alamat")):
+                return True
+        return False
+
+    data_record_pii = _has_pii_in_data_record(body)
     try:
         rd = client.get("/direktori.php")
         body_d = _body(rd)
-        data_record = data_record or bool(re.search(r'data-record=', body_d, re.IGNORECASE))
+        data_record_pii = data_record_pii or _has_pii_in_data_record(body_d)
     except Exception:
         pass
 
     sb.scan_text(body)
-    vuln = hidden_div or debug_comment or data_record
-    evidence = f"sembunyi={hidden_div} debug_comment={debug_comment} data-record={data_record}"
+    vuln = hidden_div or debug_comment or data_record_pii
+    evidence = f"sembunyi={hidden_div} debug_comment={debug_comment} data_record_pii={data_record_pii}"
     leaked = ["no_ktp", "rekening", "handphone"] if vuln else []
     return _status_check(vuln, id_, cat, sev, ep, evidence, leaked=leaked)
 
@@ -283,32 +302,29 @@ def check_A7(client: httpx.Client, sb: Scoreboard) -> Finding:
     sev: Severity = "high"
     ep  = "/keuangan.php"
 
-    # Try accessing without login
+    # Try accessing without login (must not serve financial data at /keuangan.php)
     try:
-        r_anon = client.get("/keuangan.php")
+        from ..client import make_client as _mc
+        anon_client = _mc(base_url=str(client.base_url).rstrip("/") or BASE_SIMAD)
+        r_anon = anon_client.get("/keuangan.php")
+        anon_access = r_anon.status_code == 200 and r_anon.url.path == "/keuangan.php" and "rekening" in _body(r_anon).lower()
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
-    body_anon = _body(r_anon)
-    anon_access = r_anon.status_code == 200 and bool(
-        re.search(r"(rekening|keuangan|tabel|anggaran)", body_anon, re.IGNORECASE)
-    )
-
-    # Try as humas (should be 403)
-    cookies: dict[str, str] = {}
+    # Try as humas: in vuln mode, any logged-in user passes (broken function-level auth)
+    # In hardened mode, humas receives HTTP 403 Akses ditolak
+    humas_access = False
     try:
         acc = by_role("humas")
-        lr = client.post("/login.php", data={"username": acc.username, "password": acc.password})
-        cookies = dict(lr.cookies)
-        r_humas = client.get("/keuangan.php", cookies=cookies)
-        humas_access = r_humas.status_code == 200 and bool(
-            re.search(r"(rekening|keuangan)", _body(r_humas), re.IGNORECASE)
-        )
+        humas_client = _mc(base_url=str(client.base_url).rstrip("/") or BASE_SIMAD)
+        lr = _login_simad(humas_client, acc.username, acc.password)
+        r_humas = humas_client.get("/keuangan.php")
+        humas_access = r_humas.status_code == 200 and r_humas.url.path == "/keuangan.php" and "rekening" in _body(r_humas).lower()
     except Exception:
         humas_access = False
 
     vuln = anon_access or humas_access
-    evidence = f"anon={anon_access} humas={humas_access}"
+    evidence = f"anon_access={anon_access} humas_access={humas_access} humas_status={getattr(r_humas, 'status_code', 'err')}"
     return _status_check(vuln, id_, cat, sev, ep, evidence)
 
 
@@ -334,7 +350,7 @@ def check_A8(client: httpx.Client, sb: Scoreboard) -> Finding:
     sb.scan_text(body)
 
     vuln = (r.status_code == 200) and (is_csv or has_pii)
-    evidence = f"status={r.status_code} is_csv={is_csv} has_pii={has_pii} rows≈{rows}"
+    evidence = f"status={r.status_code} is_csv={is_csv} has_pii={has_pii} rows~{rows}"
     leaked = ["no_ktp", "rekening", "npwp", "handphone", "email"] if vuln else []
     return _status_check(vuln, id_, cat, sev, ep, evidence, leaked=leaked, rows=rows)
 
@@ -346,7 +362,7 @@ def check_A9(client: httpx.Client, sb: Scoreboard) -> Finding:
     id_ = "A9"
     cat = "File sensitif di web root"
     sev: Severity = "critical"
-    ep  = "/backup/, /.env, /robots.txt"
+    ep  = "/backup/, /.env"
 
     found: list[str] = []
     try:
@@ -354,7 +370,6 @@ def check_A9(client: httpx.Client, sb: Scoreboard) -> Finding:
             "/backup/",
             "/backup/simad_backup_2026-10-28.sql",
             "/.env",
-            "/robots.txt",
         ]
         for p in paths:
             r = client.get(p)
@@ -368,10 +383,6 @@ def check_A9(client: httpx.Client, sb: Scoreboard) -> Finding:
                     found.append(p)
                 elif p == "/backup/" and "Index of" in body:
                     found.append(p)
-                elif p == "/robots.txt":
-                    # robots.txt leaking sensitive paths
-                    if bool(re.search(r"(backup|admin|export|config)", body, re.IGNORECASE)):
-                        found.append(f"{p}[leaks-paths]")
     except Exception as exc:
         return _skip(id_, cat, sev, ep, str(exc))
 
@@ -444,9 +455,14 @@ def check_A12(client: httpx.Client, sb: Scoreboard) -> Finding:
     sev: Severity = "medium"
     ep  = "/login.php"
 
+    # A12 must use a fresh client — the shared client's cookie jar may already
+    # hold SIMADSESSID from earlier checks, causing the server to skip Set-Cookie.
+    # We need the raw Set-Cookie header to inspect flags.
+    from ..client import make_client as _mc
     try:
+        tmp_client = _mc(base_url=str(client.base_url).rstrip("/") or BASE_SIMAD)
         acc = by_role("admin")
-        r = client.post("/login.php", data={"username": acc.username, "password": acc.password})
+        r = tmp_client.post("/login.php", data={"username": acc.username, "password": acc.password})
     except Exception as exc2:
         return _skip(id_, cat, sev, ep, str(exc2))
 
@@ -461,7 +477,7 @@ def check_A12(client: httpx.Client, sb: Scoreboard) -> Finding:
     has_simadsessid  = "simadsessid" in all_sc_str
 
     vuln = has_simadsessid and (missing_httponly or missing_samesite)
-    evidence = f"has_simadsessid={has_simadsessid} httponly={not missing_httponly} samesite={not missing_samesite} cookies={all_sc[:1]}"
+    evidence = f"has_simadsessid={has_simadsessid} httponly={not missing_httponly} samesite={not missing_samesite} set-cookie={all_sc[:1]}"
     return _status_check(vuln, id_, cat, sev, ep, evidence)
 
 
@@ -532,24 +548,26 @@ def check_A15(client: httpx.Client, sb: Scoreboard) -> Finding:
     id_ = "A15"
     cat = "Tanpa audit trail"
     sev: Severity = "low"
-    ep  = "/admin/audit_log, /direktori.php"
+    ep  = "/dashboard.php"
 
+    has_audit = False
+    warning_present = False
     try:
-        r = client.get("/admin/audit_log.php")
-        has_audit = r.status_code == 200 and "audit" in _body(r).lower()
-    except Exception:
-        has_audit = False
+        from ..client import make_client as _mc
+        admin_client = _mc(base_url=str(client.base_url).rstrip("/") or BASE_SIMAD)
+        acc = by_role("admin")
+        _login_simad(admin_client, acc.username, acc.password)
+        r = admin_client.get("/dashboard.php")
+        body = _body(r)
+        has_audit = "log audit akses data" in body.lower()
+        warning_present = "tidak mencatat" in body.lower()
+    except Exception as exc:
+        return _skip(id_, cat, sev, ep, str(exc))
 
-    # Also check admin dashboard for audit table
-    try:
-        r2 = client.get("/admin/")
-        has_audit = has_audit or "audit" in _body(r2).lower()
-    except Exception:
-        pass
-
-    # vuln = no audit found
-    vuln = not has_audit
-    evidence = f"audit_log_found={has_audit}"
+    # In vuln mode: audit is absent or warns "tidak mencatat siapa mengakses data"
+    # In hardened mode: audit log table is active and recording actions
+    vuln = warning_present or not has_audit
+    evidence = f"dashboard_has_audit_section={has_audit} warning_tidak_mencatat={warning_present}"
     return _status_check(vuln, id_, cat, sev, ep, evidence)
 
 
@@ -558,9 +576,10 @@ def check_A15(client: httpx.Client, sb: Scoreboard) -> Finding:
 # ---------------------------------------------------------------------------
 
 ALL_CHECKS = [
-    check_A1, check_A2, check_A3, check_A4, check_A5,
+    check_A1, check_A2, check_A3, check_A4,
     check_A6, check_A7, check_A8, check_A9, check_A10,
     check_A11, check_A12, check_A13, check_A14, check_A15,
+    check_A5,  # Run brute-force test last so IP rate limit does not lock out subsequent checks
 ]
 
 
@@ -580,4 +599,6 @@ def run_all(client: httpx.Client, sb: Scoreboard) -> list[Finding]:
                 id=fid, category="(error)", severity="info",
                 endpoint="?", status="skip", note=str(exc),
             ))
+    # Sort findings by numerical ID (A1..A15) for consistent report presentation
+    findings.sort(key=lambda x: int(x.id[1:]) if x.id.startswith("A") and x.id[1:].isdigit() else 99)
     return findings

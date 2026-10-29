@@ -21,7 +21,7 @@ class Finding:
     status: Status                   # pass | fail | skip
     leaked_fields: list[str] = field(default_factory=list)
     rows_exposed: int = 0
-    evidence_snippet: str = ""       # ≤200 chars of evidence
+    evidence_snippet: str = ""       # <=200 chars of evidence
     note: str = ""                   # optional human note / [PLANNED] tag
 
 

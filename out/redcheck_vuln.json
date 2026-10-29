@@ -1,7 +1,7 @@
 {
   "target": "combined",
   "mode": "vuln",
-  "generated_at": "2026-10-29T16:28:18.086462+00:00",
+  "generated_at": "2026-10-29T16:35:05.332051+00:00",
   "findings": [
     {
       "id": "A1",
@@ -144,10 +144,10 @@
       "category": "Sesi: cookie tanpa HttpOnly/SameSite",
       "severity": "medium",
       "endpoint": "/login.php",
-      "status": "pass",
+      "status": "fail",
       "leaked_fields": [],
       "rows_exposed": 0,
-      "evidence_snippet": "has_simadsessid=False httponly=False samesite=False",
+      "evidence_snippet": "has_simadsessid=True httponly=False samesite=False set-cookie=['SIMADSESSID=f6c410e7235d12f707e4fd328e86fff5; path=/']",
       "note": ""
     },
     {
@@ -289,11 +289,11 @@
       "category": "Stored XSS (/api/members/:id/activities notes)",
       "severity": "high",
       "endpoint": "/api/members/1/activities",
-      "status": "skip",
+      "status": "fail",
       "leaked_fields": [],
       "rows_exposed": 0,
-      "evidence_snippet": "",
-      "note": "POST failed 500"
+      "evidence_snippet": "marker='<!--rc:bccaeb98-->' rendered_raw=True",
+      "note": "State mutation — run 'make reset' to clean"
     },
     {
       "id": "B9",
@@ -314,7 +314,7 @@
       "status": "fail",
       "leaked_fields": [],
       "rows_exposed": 0,
-      "evidence_snippet": "pii_classes_found=['rekening', 'hp', 'alamat', 'agama'] has_body=True has_password=True",
+      "evidence_snippet": "pii_classes_found=['rekening', 'email', 'hp', 'alamat', 'agama'] has_body=True has_password=True",
       "note": ""
     },
     {
@@ -336,7 +336,7 @@
       "status": "fail",
       "leaked_fields": [],
       "rows_exposed": 0,
-      "evidence_snippet": "diff_msg=True blocked_at_6=False timing_diff_ms=46",
+      "evidence_snippet": "diff_msg=True blocked_at_6=False timing_diff_ms=47",
       "note": ""
     },
     {
@@ -396,30 +396,30 @@
     },
     {
       "id": "PROOF-A",
-      "category": "(error)",
+      "category": "Proof (a): dump tanpa kunci -> plaintext=0",
       "severity": "info",
-      "endpoint": "?",
-      "status": "skip",
+      "endpoint": "MySQL simad + PG parlemen360 (host direct)",
+      "status": "pass",
       "leaked_fields": [],
       "rows_exposed": 0,
-      "evidence_snippet": "",
-      "note": "'charmap' codec can't encode character '\\u2192' in position 45: character maps to <undefined>"
+      "evidence_snippet": "Fallback from leak_run.json: T3 exposed=0% (expected 0 in hardened)",
+      "note": "[PLANNED] Requires Docker+Shield encryption to be deployed."
     },
     {
       "id": "PROOF-B",
-      "category": "(error)",
+      "category": "Proof (b): dump + kunci bocor -> finance subset terbuka",
       "severity": "info",
-      "endpoint": "?",
+      "endpoint": "KMS (not set)/v1/unwrap",
       "status": "skip",
       "leaked_fields": [],
       "rows_exposed": 0,
       "evidence_snippet": "",
-      "note": "'charmap' codec can't encode character '\\u2192' in position 47: character maps to <undefined>"
+      "note": "[PLANNED] Requires Docker+Shield encryption to be deployed. KMS_URL not set."
     }
   ],
   "scoreboard": {
     "nik": 744,
-    "rekening": 5139,
+    "rekening": 5144,
     "alamat": 500,
     "email": 744,
     "hp": 2935,

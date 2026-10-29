@@ -35,6 +35,14 @@ def _login_modern(client: httpx.Client, username: str, password: str) -> tuple[i
         if r.status_code == 200:
             d = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
             token = d.get("token", "") or d.get("access_token", "")
+            if not token:
+                # In hardened mode, token is sent in Set-Cookie: p360_session=<jwt>
+                sc = r.headers.get("set-cookie", "")
+                m = re.search(r"p360_session=([^;]+)", sc)
+                if m:
+                    token = m.group(1)
+                elif "p360_session" in client.cookies:
+                    token = client.cookies["p360_session"]
         return r.status_code, token
     except Exception:
         return 0, ""
@@ -84,31 +92,31 @@ def proof_c(client_modern: httpx.Client, sb: Scoreboard) -> Finding:
             if isinstance(data, dict):
                 account_no = data.get("account_no")
                 if account_no and not _is_ciphertext(str(account_no)):
-                    results.append("keuangan→account_no:VISIBLE✅")
+                    results.append("keuangan->account_no:VISIBLE[OK]")
                     sb.ingest_field("account_no", str(account_no))
                 else:
-                    results.append("keuangan→account_no:MISSING⚠")
+                    results.append("keuangan->account_no:MISSING[WARN]")
                 # Religion MUST NOT appear for keuangan
                 religion = data.get("religion")
                 if religion is not None:
-                    failures.append(f"keuangan→religion:LEAKED❌({religion!r})")
+                    failures.append(f"keuangan->religion:LEAKED[FAIL]({religion!r})")
                 else:
-                    results.append("keuangan→religion:ABSENT✅")
+                    results.append("keuangan->religion:ABSENT[OK]")
         except Exception as exc:
             failures.append(f"keuangan_request_error:{exc}")
     else:
         failures.append("keuangan_login_failed")
 
-    # Test humas → /api/finance must be 403
+    # Test humas -> /api/finance must be 403
     acc_humas = by_role("humas")
     _, tok_humas = _login_modern(client_modern, acc_humas.username, acc_humas.password)
     if tok_humas:
         try:
             r = client_modern.get("/api/finance", headers=_auth_header(tok_humas))
             if r.status_code == 403:
-                results.append("humas→/api/finance:403✅")
+                results.append("humas->/api/finance:403[OK]")
             else:
-                failures.append(f"humas→/api/finance:{r.status_code}❌")
+                failures.append(f"humas->/api/finance:{r.status_code}[FAIL]")
         except Exception as exc:
             failures.append(f"humas_finance_error:{exc}")
     else:
@@ -127,9 +135,9 @@ def proof_c(client_modern: httpx.Client, sb: Scoreboard) -> Finding:
                 d_other = r_other.json() if isinstance(r_other.json(), dict) else {}
                 leaked = [f for f in ("nik", "account_no", "npwp") if f in d_other and d_other[f]]
                 if leaked:
-                    failures.append(f"anggota→members/2 leaks {leaked}❌")
+                    failures.append(f"anggota->members/2 leaks {leaked}[FAIL]")
                 else:
-                    results.append("anggota→members/2:no_pii✅")
+                    results.append("anggota->members/2:no_pii[OK]")
         except Exception as exc:
             failures.append(f"anggota_error:{exc}")
     else:

@@ -14,6 +14,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Ensure stdout/stderr can handle non-ASCII on Windows (cp1252 console)
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf_8"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+
 import httpx
 
 from .config import BASE_SIMAD, BASE_MODERN, OUT_DIR
